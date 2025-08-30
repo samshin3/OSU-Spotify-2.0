@@ -4,8 +4,8 @@ import tempfile
 class OsuFunctions():
 
     def __init__(self, client_id, client_secret):
-        self._token_path = tempfile.gettempdir() + "/osu_token.pickle"
-        self.api = Ossapi(client_id, client_secret, token_directory=self._token_path)
+        temp_token_file = tempfile.gettempdir() + "/osu_token.pickle"
+        self.api = Ossapi(client_id, client_secret, token_directory=temp_token_file)
 
     def get_user_id(self,username):
         user = self.api.user(user=username, key="username")
