@@ -1,11 +1,13 @@
 from ossapi import Ossapi
 import tempfile
+import os
 
 class OsuFunctions():
 
     def __init__(self, client_id, client_secret):
-        temp_token_file = tempfile.gettempdir() + "/osu_token.pickle"
-        self.api = Ossapi(client_id, client_secret, token_directory=temp_token_file)
+        token_dir = os.path.join(tempfile.gettempdir(), "osu_tokens")
+        os.makedirs(token_dir, exist_ok=True)  # Ensure directory exists
+        self.api = Ossapi(client_id, client_secret, token_directory=token_dir)
 
     def get_user_id(self,username):
         user = self.api.user(user=username, key="username")
