@@ -10,7 +10,8 @@ class SpotifySession():
     def __init__(self, client_id, client_secret, redirect_uri):
         self._client_id = client_id
         self._client_secret = client_secret
-        self.state = self.random_string_gen(16)
+        self._auth_b64 = self._auth_64encode()
+        self.state = self._random_string_gen(16)
         self._redirect_uri = redirect_uri
 
     def get_url(self):
@@ -23,42 +24,37 @@ class SpotifySession():
         }
         return f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}"
     
-    def get_token(self, code):
+    def get_token(self, code=None):
         url = "https://accounts.spotify.com/api/token"
-        auth = self._client_id + ":" + self._client_secret
-        auth_bytes = auth.encode("utf-8")
-        auth_b64 = str(base64.b64encode(auth_bytes).decode("utf-8"))
-        data = {
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": self._redirect_uri
-        }
-        header = {
-            "Authorization": "Basic " + auth_b64,
+        headers = {
+            "Authorization": "Basic " + self._auth_b64,
             "Content-Type": "application/x-www-form-urlencoded"
         }
 
-        result = post(url, headers=header, data=data)
+        if (code is None):
+            data = {
+                "grant_type": "client_credentials"
+            }
+        else:
+            data = {
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": self._redirect_uri
+            }
+
+        result = post(url, headers=headers, data=data)
         json_result = json.loads(result.content)
 
-        if "error" in json_result:
-            raise PermissionError
+        if ("error" in json_result):
+            raise SessionError(code=json_result["error"]["code"], payload=json_result["error"]["message"])
         
-        self._token = json_result["access_token"]
+        self.token = SessionToken(json_result)
         self._headers = {
-            "Authorization": "Bearer " + self._token,
+            "Authorization": "Bearer " + self.token.access_token,
             "Content-Type": "application/json"
         }
-    
-    def get_user_profile(self):
-        url = "https://api.spotify.com/v1/me"
-        result = get(url, headers=self._headers)
-        json_result = json.loads(result.content)
-        return json_result
-    
-    def get_user_id(self):
-        results = self.get_user_profile()
-        self._user_id = results["id"]
+
+        self.profile = UserProfile(self._headers)
     
     def create_playlist(self, p_name="OSU! Playlist", is_public="false", collab="false", desc="My Spotify Playlist"):
         url = f"https://api.spotify.com/v1/users/{self._user_id}/playlists"
@@ -70,6 +66,10 @@ class SpotifySession():
         }
         result = post(url,headers=self._headers, json=data)
         json_result = json.loads(result.content)
+
+        if ("error" in json_result):
+            raise SessionError(code=json_result["error"]["code"], payload=json_result["error"]["message"])
+        
         return json_result
     
     def add_songs(self, playlist_id, uris):
@@ -79,6 +79,10 @@ class SpotifySession():
         }
         result = post(url, headers=self._headers, json=data)
         json_result = json.loads(result.content)
+
+        if ("error" in json_result):
+            raise SessionError(code=json_result["error"]["code"], payload=json_result["error"]["message"])
+
         return json_result
     
     def search(self, query, type, limit = 1, offset = 0):
@@ -92,6 +96,10 @@ class SpotifySession():
         url = f"https://api.spotify.com/v1/search?{urllib.parse.urlencode(params)}"
         result = get(url, headers=self._headers)
         json_result = json.loads(result.content)
+
+        if ("error" in json_result):
+            raise SessionError(code=json_result["error"]["code"], payload=json_result["error"]["message"])
+        
         tidied_result = []
 
         for i in range(limit):
@@ -105,6 +113,7 @@ class SpotifySession():
         
         return tidied_result
     
+    # Takes one query at a time
     def get_track_uris(self, query):
         results = self.search(query, type="track")
         result = results[0]
@@ -112,27 +121,56 @@ class SpotifySession():
             return ("error", query)
         return ("success", result["uri"])
 
+    def _auth_64encode(self):
+        auth = self._client_id + ":" + self._client_secret
+        auth_bytes = auth.encode("utf-8")
+        auth_b64 = str(base64.b64encode(auth_bytes).decode("utf-8"))
+        return auth_b64
+
     @staticmethod
-    def random_string_gen(length):
+    def _random_string_gen(length):
 
         letters = string.ascii_letters
         random_string = "".join(random.choice(letters) for _ in range(length))
         return random_string
-    
-    @staticmethod
-    def client_cred(client_id, client_secret):
-        url = "https://accounts.spotify.com/api/token"
-        auth = client_id + ":" + client_secret
-        auth_bytes = auth.encode("utf-8")
-        auth_b64 = str(base64.b64encode(auth_bytes).decode("utf-8"))
 
-        body = {
-            "grant_type": "client_credentials",
-        }
-        headers = {
-            "Authorization": "Basic " + auth_b64,
-            "Content-Type": "application/x-www-form-urlencoded" 
-        }
-        result = post(url=url, headers=headers, data=body)
+class SessionToken():
+    
+    def __init__(self,token_file):
+        self.access_token = token_file["access_token"]
+        self.type = token_file["token_type"]
+        self.expires_int = token_file["expires_in"]
+
+class UserProfile():
+
+    def __init__(self, header):
+        self.get_user_id(header)
+
+    @staticmethod
+    def get_user_profile(headers):
+        url = "https://api.spotify.com/v1/me"
+        result = get(url, headers=headers)
         json_result = json.loads(result.content)
         return json_result
+    
+    def get_user_id(self, headers):
+        results = self.get_user_profile(headers)
+        self.country = results["country"]
+        self.display_name = results["display_name"]
+        self.email = results["email"]
+        self.explicit_content = results["explicit_content"]
+        self.external_urls = results["external_urls"]
+        self.followers = results["followers"]
+        self.href = results["href"]
+        self.id = results["id"]
+        self.images = results["images"]
+        self.product = results["product"]
+        self.uri = results["uri"]
+
+class SessionError(Exception):
+
+    def __init__(self, code, payload=None):
+        self.code = code
+        self.message = f"Error with code {code}"
+        self.message = payload
+        super().__init__(self.message)

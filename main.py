@@ -42,7 +42,6 @@ def callback():
     except:
         return redirect("/error")
     
-    api_session.get_user_id()
     return redirect("/make-playlist")
 
 @app.route("/error")
@@ -74,3 +73,4 @@ def submit():
     api_session.add_songs(playlist_id=playlist["id"], uris=uri_list)
 
     return f"Successfully added {len(uri_list)} songs. \n could not find the following tracks: {errors}\n"
+
