@@ -6,7 +6,7 @@ class OsuFunctions():
 
     def __init__(self, client_id, client_secret):
         token_dir = os.path.join(tempfile.gettempdir(), "osu_tokens")
-        os.makedirs(token_dir, exist_ok=True)  # Ensure directory exists
+        os.makedirs(token_dir, exist_ok=True)
         self.api = Ossapi(client_id, client_secret, token_directory=token_dir)
 
     def get_user_id(self,username):

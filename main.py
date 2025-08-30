@@ -16,7 +16,8 @@ app_secret_key = secrets.token_hex(32)
 
 app = Flask(__name__)
 app.secret_key = app_secret_key
-api_session = SpotifySession(Spotify_client_id, Spotify_client_secret)
+redirect_uri = "https://osu-spotify-2-0.vercel.app/callback"
+api_session = SpotifySession(Spotify_client_id, Spotify_client_secret, redirect_uri)
 osu_session = OsuFunctions(OSU_client_id, OSU_client_secret)
 
 @app.route("/")

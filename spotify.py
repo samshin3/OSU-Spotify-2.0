@@ -7,11 +7,11 @@ import json
 
 class SpotifySession():
 
-    def __init__(self, client_id, client_secret):
+    def __init__(self, client_id, client_secret, redirect_uri):
         self._client_id = client_id
         self._client_secret = client_secret
         self.state = self.random_string_gen(16)
-        self._redirect_uri = "http://localhost:5000/callback"
+        self._redirect_uri = redirect_uri
 
     def get_url(self):
         params = {
