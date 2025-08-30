@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make Playlist</title>
+</head>
+<body>
+    <h1>OSU! Song Converter</h1>
+    <form id="params" action="/submit" method="POST">
+        <label for="p_name">Playlist Name:</label>
+        <input type="text" name="p_name" id="p_name" value="OSU! Playlist"><br><br>
+
+        <label for="Username">OSU Username:</label>
+        <input type="text" name="Username" id="Username" value="Cookchomper"><br><br>
+
+        <label for="Beatmap_type">Which Beatmaps:</label>
+        <select name="Beatmap_type" id="Beatmap_type">
+            <option value="favourite">Favourite</option>
+            <option value="graveyard">Graveyard</option>
+            <option value="guest">Guest</option>
+            <option value="loved">Loved</option>
+            <option value="most_played">Most Played</option>
+            <option value="nominated">Nominated</option>
+            <option value="pending">Pending</option>
+            <option value="ranked">Ranked</option>
+        </select><br><br>
+
+        <label for="is_public">Public or Private Playlist?</label>
+        <select name="is_public" id="is_public">
+            <option value="true">Public</option>
+            <option value="false">Private</option>
+        </select><br><br>
+
+        <label for="collab">Make it collaborative?</label>
+        <select name="collab" id="collab">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </select><br><br>
+
+        <label for="desc">Playlist Description</label>
+        <input type="text" name="desc" id="desc" value="My OSU! Playlist"><br><br>
+
+        <button type="submit">Create Playlist</button>
+    </form>
+    
+</body>
+</html>
