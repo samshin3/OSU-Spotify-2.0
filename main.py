@@ -73,7 +73,3 @@ def submit():
     api_session.add_songs(playlist_id=playlist["id"], uris=uri_list)
 
     return f"Successfully added {len(uri_list)} songs. \n could not find the following tracks: {errors}\n"
-
-if __name__ == "__main__":
-    
-    app.run(host = "0.0.0.0", port=5000, debug=True)
