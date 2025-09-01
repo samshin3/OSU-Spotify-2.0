@@ -10,19 +10,33 @@ class OsuFunctions():
         self.api = Ossapi(client_id, client_secret, token_directory=token_dir)
 
     def get_user_id(self,username):
-        user = self.api.user(user=username, key="username")
-        return user.id
+        try:
+            user = self.api.user(user=username, key="username")
+            self.user_id = user.id
+        except ValueError:
+            raise ValueError("User Not Found")
 
-    def user_beatmaps(self,username, type):
-        id = self.get_user_id(username)
+    def get_beatmaps(self, type):
         limit = 100 #Capped at 100 beatmaps for the sake of my computer
-        beatmaps = self.api.user_beatmaps(user_id=id, type=type, limit=limit)
+        beatmaps = self.api.user_beatmaps(user_id=self.user_id, type=type, limit=limit)
+
+        if (not beatmaps):
+            raise ValueError("Playlist is empty")
+        
         return beatmaps
 
-    def to_spotify_query(self,username, type):
-        beatmaps = self.user_beatmaps(username, type)
+    @staticmethod
+    def to_spotify_query(beatmaps):
         queries = []
         for beatmap in beatmaps:
             query = beatmap.artist+ "-" + beatmap.title
             queries.append(query)
         return queries
+
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    OSU_client_id = os.getenv("OSU_CLIENT_ID")
+    OSU_client_secret = os.getenv("OSU_CLIENT_SECRET")
+    osu_session = OsuFunctions(OSU_client_id, OSU_client_secret)

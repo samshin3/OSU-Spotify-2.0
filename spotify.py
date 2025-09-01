@@ -57,7 +57,7 @@ class SpotifySession():
         self.profile = UserProfile(self._headers)
     
     def create_playlist(self, p_name="OSU! Playlist", is_public="false", collab="false", desc="My Spotify Playlist"):
-        url = f"https://api.spotify.com/v1/users/{self._user_id}/playlists"
+        url = f"https://api.spotify.com/v1/users/{self.profile.id}/playlists"
         data = {
             "name": p_name,
             "public": is_public,

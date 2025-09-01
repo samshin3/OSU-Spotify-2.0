@@ -1,24 +1,33 @@
 import os
 from dotenv import load_dotenv
-from flask import Flask, redirect, request, render_template
+from flask import Flask, redirect, request, render_template, flash
 import secrets
-from spotify import SpotifySession
+from spotify import SpotifySession, SessionError
 from osu_functions import OsuFunctions
 from concurrent.futures import ThreadPoolExecutor
+import sys
 
 load_dotenv()
 
-Spotify_client_id = os.getenv("SPOTIFY_CLIENT_ID")
-Spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+if (len(sys.argv) > 0):
+    Spotify_client_id = os.getenv("TEST_CLIENT_ID")
+    Spotify_client_secret = os.getenv("TEST_CLIENT_SECRET")
+    redirect_uri = "http://localhost:5500/callback"
+    api_session = SpotifySession(Spotify_client_id, Spotify_client_secret, redirect_uri)
+else:
+    Spotify_client_id = os.getenv("SPOTIFY_CLIENT_ID")
+    Spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+    redirect_uri = "https://osu-spotify-2-0.vercel.app/callback"
+    api_session = SpotifySession(Spotify_client_id, Spotify_client_secret, redirect_uri)
+
 OSU_client_id = os.getenv("OSU_CLIENT_ID")
 OSU_client_secret = os.getenv("OSU_CLIENT_SECRET")
-app_secret_key = secrets.token_hex(32)
+osu_session = OsuFunctions(OSU_client_id, OSU_client_secret)
 
+app_secret_key = secrets.token_hex(32)
 app = Flask(__name__)
 app.secret_key = app_secret_key
-redirect_uri = "https://osu-spotify-2-0.vercel.app/callback"
-api_session = SpotifySession(Spotify_client_id, Spotify_client_secret, redirect_uri)
-osu_session = OsuFunctions(OSU_client_id, OSU_client_secret)
+
 
 @app.route("/")
 def index():
@@ -61,16 +70,38 @@ def submit():
     collab = request.form.get("collab")
     desc = request.form.get("desc")
 
-    playlist = api_session.create_playlist(p_name, is_public, collab, desc)
+    try:
+        playlist = api_session.create_playlist(p_name=p_name, is_public=is_public, collab=collab, desc=desc)
+    except SessionError:
+        flash("Could not make playlist")
+        return redirect("/make-playlist")
 
-    queries = osu_session.to_spotify_query(username=username, type=beatmap_type)
+    try:
+        osu_session.get_user_id(username=username)
+    except ValueError:
+        flash("OSU! Player Not Found")
+        return redirect("/make-playlist")
+    
+    try:
+        beatmaps = osu_session.get_beatmaps(type=beatmap_type)
+    except ValueError:
+        flash("Beatmaps is empty!")
+        return redirect("/make-playlist")
 
-    with ThreadPoolExecutor() as executor:
-        uri_list = list(executor.map(api_session.get_track_uris, queries))
+    try:
+        queries = osu_session.to_spotify_query(beatmaps=beatmaps)
 
-    errors = list(map(lambda x: x[1], filter(lambda x: "error" in x, uri_list)))
-    uri_list = list(map(lambda x: x[1], filter(lambda x: "error" not in x, uri_list)))
-    api_session.add_songs(playlist_id=playlist["id"], uris=uri_list)
+        with ThreadPoolExecutor() as executor:
+            uri_list = list(executor.map(api_session.get_track_uris, queries))
 
-    return f"Successfully added {len(uri_list)} songs. \n could not find the following tracks: {errors}\n"
+        errors = list(map(lambda x: x[1], filter(lambda x: "error" in x, uri_list)))
+        uri_list = list(map(lambda x: x[1], filter(lambda x: "error" not in x, uri_list)))
+        api_session.add_songs(playlist_id=playlist["id"], uris=uri_list)
 
+        return f"Successfully added {len(uri_list)} songs. \n could not find the following tracks: \n{errors}\n"
+    except:
+        flash("User Not Found")
+        return redirect("/make-playlist")
+
+if (len(sys.argv) > 0):
+    app.run(host="0.0.0.0", port=5500, debug=True)
