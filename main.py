@@ -13,12 +13,12 @@ if (len(sys.argv) > 1):
     Spotify_client_id = os.getenv("TEST_CLIENT_ID")
     Spotify_client_secret = os.getenv("TEST_CLIENT_SECRET")
     redirect_uri = "http://localhost:5500/callback"
-    api_session = SpotifySession(Spotify_client_id, Spotify_client_secret, redirect_uri)
 else:
     Spotify_client_id = os.getenv("SPOTIFY_CLIENT_ID")
     Spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
     redirect_uri = "https://osu-spotify-2-0.vercel.app/callback"
-    api_session = SpotifySession(Spotify_client_id, Spotify_client_secret, redirect_uri)
+
+api_session = SpotifySession(Spotify_client_id, Spotify_client_secret, redirect_uri)
 
 OSU_client_id = os.getenv("OSU_CLIENT_ID")
 OSU_client_secret = os.getenv("OSU_CLIENT_SECRET")
