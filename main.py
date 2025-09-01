@@ -9,7 +9,7 @@ import sys
 
 load_dotenv()
 
-if (len(sys.argv) > 0):
+if (len(sys.argv) > 1):
     Spotify_client_id = os.getenv("TEST_CLIENT_ID")
     Spotify_client_secret = os.getenv("TEST_CLIENT_SECRET")
     redirect_uri = "http://localhost:5500/callback"
@@ -103,5 +103,5 @@ def submit():
         flash("User Not Found")
         return redirect("/make-playlist")
 
-if (len(sys.argv) > 0):
+if (len(sys.argv) > 1):
     app.run(host="0.0.0.0", port=5500, debug=True)
