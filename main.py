@@ -71,12 +71,6 @@ def submit():
     desc = request.form.get("desc")
 
     try:
-        playlist = api_session.create_playlist(p_name=p_name, is_public=is_public, collab=collab, desc=desc)
-    except SessionError:
-        flash("Could not make playlist")
-        return redirect("/make-playlist")
-
-    try:
         osu_session.get_user_id(username=username)
     except ValueError:
         flash("OSU! Player Not Found")
@@ -86,6 +80,12 @@ def submit():
         beatmaps = osu_session.get_beatmaps(type=beatmap_type)
     except ValueError:
         flash("Beatmaps is empty!")
+        return redirect("/make-playlist")
+    
+    try:
+        playlist = api_session.create_playlist(p_name=p_name, is_public=is_public, collab=collab, desc=desc)
+    except SessionError:
+        flash("Could not make playlist")
         return redirect("/make-playlist")
 
     try:
